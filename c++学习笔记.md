@@ -414,7 +414,7 @@ int main() {
 
 ![图片7](.\c++学习笔记src\图片7.png)
 
-- All classes with at least one virtual method should declare a virtual destructor
+- All classes with **at least one virtual method** should declare a virtual destructor
 
 - ```c++
   class Animal {
