@@ -1,0 +1,1 @@
+We wrote this document to record some of our own computer learning experience and skills
