@@ -488,3 +488,409 @@ int main() {
 - In this example, the `Animal` class contains a pure virtual function `speak()`. This means that any class derived from `Animal` must provide an implementation for the `speak()` function. The `Dog` class provides an implementation for the `speak()` function, so it can be instantiated and used like any other class.
 - A class that contains at least one pure virtual function is called an abstract class, and cannot be instantiated directly. Instead, abstract classes are typically used as base classes for other classes that provide concrete implementations of the pure virtual functions.
 - One benefit of using pure virtual functions is that they allow for a clean separation of interface and implementation. ==By defining a set of pure virtual functions in the base class, we can define a clear interface that any derived class must implement.== This can make it easier to reason about the behavior of the class hierarchy, and can make it easier to swap out different implementations of the same interface.
+
+## 4. Operator Overloading
+
+**Operator overloading** **is a special case of polymorphism in which some** **operators** **are treated as polymorphic functions and have different behaviors depending on the type of its arguments**
+
+==**Categories not in bold are rarely used in practice**（非黑体字的类别实践之中很少用）==
+
+![图片8](.\c++学习笔记src\图片8.png)
+
+### 4.1 Subscript Operator operator[]
+
+The **array subscript** operator[] allows accessing to an object in an array-like fashion
+
+The operator accepts **everything** as parameter, not just integers.
+
+```c++
+#include <bits/stdc++.h>
+struct A
+{
+	char permutation[6]{'c', 'b', 'd', 'a', 'h', 'y'};
+	char& operator[](char c) { return permutation[c - 'a']; }
+	char operator[](char c) const { return permutation[c - 'a']; }
+};
+int main()
+{
+	A a;
+	std::cout << a['d'] << std::endl; //output 'a'
+}
+```
+
+### 4.2 Comparison Operator operator<
+
+**Relational** and c**omparison** operators operator<, <=, ==, >= > are used for
+
+comparing two objects
+
+In particular, the operator< is used to **determine the ordering** of a set of objects
+
+```c++
+#include <iostream>
+
+class MyClass {
+public:
+    int value;
+    //overload comparison operator
+    bool operator<(const MyClass& other) const {
+        return value < other.value;
+    }
+};
+int main() {
+    MyClass a, b;
+    a.value = 1;
+    b.value = 2;
+    std::cout << std::boolalpha << (a < b) << std::endl;  //output true
+    std::cout << std::boolalpha << (b < a) << std::endl;  //output false
+    return 0;
+}
+```
+
+### 4.3 Spaceship Operator operator<=>
+
+==C++20== allows overloading the **spaceship operator** **<=>** for replacing all comparison operators operator<, <=, ==, >= >
+
+```c++
+struct A
+{
+	bool operator==(const A&) const;
+	bool operator!=(const A&) const;
+	bool operator<(const A&) const;
+	bool operator>(const A&) const;
+	bool operator<=(const A&) const;
+	bool operator>=(const A&) const;
+};
+//replace by
+struct B
+{
+	int operator<=>(const B&) const;
+};
+```
+
+==Usage==
+
+```c++
+#include <compare>
+#include <iostream>
+class MyClass {
+ public:
+	int value;
+	// 重载 <=> 运算符
+	auto operator<=>(const MyClass& other) const {
+		return value <=> other.value;
+	}
+};
+int main() {
+	MyClass a, b;
+	a.value = 3;
+	b.value = 2;
+	std::cout << std::boolalpha << (a < b) << std::endl;  // 输出 true
+	std::cout << std::boolalpha << (b < a) << std::endl;  // 输出 false
+	auto cmp = a <=> b;
+	if (cmp == std::strong_ordering::less) {
+		std::cout << "a < b" << std::endl;
+	} else if (cmp == std::strong_ordering::equal) {
+		std::cout << "a == b" << std::endl;
+	} else if (cmp == std::strong_ordering::greater) {
+		std::cout << "a > b" << std::endl;
+	}
+	if (a<=>b < nullptr)
+		std::cout << "a < b" << std::endl;
+	else if (a<=>b == nullptr)
+		std::cout << "a == b" << std::endl;
+	else if (a<=>b > nullptr)
+		std::cout << "a > b" << std::endl;
+	return 0;
+}
+```
+
+The compiler can also generate the code for the *spaceship operator* = default , even for multiple fields and arrays, by using the default comparison **semantic** （语义）of its members
+
+![图片9](.\c++学习笔记src\图片9.png)
+
+The *spaceship operator* can use one of the following ordering:
+
+**strong ordering** • if a is equivalent to b , f(a) is also equivalent to f(b)
+
+​             • exactly one of < , == , or > must be true
+
+​             ○ integral types, e.g. int , char
+
+**weak ordering**  • if a is equivalent to b , f(a) may not be equivalent to f(b)
+
+​             • exactly one of < , == , or > must be true
+
+​             ○ rectangles, e.g. R{2, 5} == R{5, 2}
+
+**partial ordering** • if a is equivalent to b , f(a) may not be equivalent to f(b)
+
+​             • < , == , or > may all be false
+
+​             ○ floating-point float , e.g. NaN
+
+>1. 强序关系（strong ordering）：如果 `a` 和 `b` 相等，那么 `f(a)` 和 `f(b)` 也必须相等，而且只有 `<`、`==` 和 `>` 中的一种可以为真。这种比较方式适用于整型类型，如 `int`、`char` 等。
+>2. 弱序关系（weak ordering）：如果 `a` 和 `b` 相等，那么 `f(a)` 和 `f(b)` 不一定相等，而且只有 `<`、`==` 和 `>` 中的一种可以为真。这种比较方式适用于一些矩形类型，例如 `R{2, 5} == R{5, 2}`。
+>3. 偏序关系（partial ordering）：如果 `a` 和 `b` 相等，那么 `f(a)` 和 `f(b)` 不一定相等，而且 `<`、`==` 和 `>` 中的任意一种都可能为假。这种比较方式适用于浮点型类型，例如 `float`，其中 NaN（Not a Number）的比较结果是偏序的。
+
+```c++
+#include <bits/stdc++.h>
+using namespace std;
+void test_strong_ordering()
+{
+	int a = 5, b = 5;
+	auto result = a <=> b;
+
+	if (result == std::strong_ordering::less) {
+		std::cout << "a < b" << std::endl;
+	} else if (result == std::strong_ordering::equal) {
+		std::cout << "a == b" << std::endl;
+	} else {
+		std::cout << "a > b" << std::endl;
+	}
+}
+void test_weak_ordering()
+{
+	struct Point {
+		int x, y;
+
+		auto operator<=>(const Point& other) const {
+			if (x == other.x && y == other.y) {
+				return std::weak_ordering::equivalent;
+			} else if (x < other.x || (x == other.x && y < other.y)) {
+				return std::weak_ordering::less;
+			} else {
+				return std::weak_ordering::greater;
+			}
+		}
+	};
+	Point p1{ 1, 2 };
+	Point p2{ 1, 3 };
+	auto cmp = p1 <=> p2;
+	if (cmp == std::weak_ordering::less) {
+		std::cout << "p1 < p2" << std::endl;
+	} else if (cmp == std::weak_ordering::equivalent) {
+		std::cout << "p1 == p2" << std::endl;
+	} else {
+		std::cout << "p1 > p2" << std::endl;
+	}
+}
+void test_partial_ordering()
+{
+	struct FloatingPoint {
+		double value;
+		auto operator<=>(const FloatingPoint& other) const {
+			if (std::isnan(value) || std::isnan(other.value)) {
+				return std::partial_ordering::unordered;
+			} else if (value < other.value) {
+				return std::partial_ordering::less;
+			} else if (value > other.value) {
+				return std::partial_ordering::greater;
+			} else {
+				return std::partial_ordering::equivalent;
+			}
+		}
+	};
+	FloatingPoint a{ nan("") };
+	FloatingPoint b{ 2.0 };
+	auto cmp = a <=> b;
+	if (cmp == std::partial_ordering::less) {
+		std::cout << "a < b" << std::endl;
+	} else if (cmp == std::partial_ordering::equivalent) {
+		std::cout << "a == b" << std::endl;
+	} else if (cmp == std::partial_ordering::greater) {
+		std::cout << "a > b" << std::endl;
+	} else if(cmp == std::partial_ordering::unordered) {
+		std::cout << "a and b are unordered" << std::endl;
+	}
+
+}
+int main()
+{
+	test_strong_ordering();
+	test_weak_ordering();
+	test_partial_ordering();
+	return 0;
+}
+```
+
+### 4.4 Function Call Operator operator()
+
+The **function call operator** operator() is generally overloaded to create objects which behave like functions, or for classes that have a primary operation 
+
+```c++
+#include <bits/stdc++.h>
+#include <numeric>
+using namespace std;
+struct Multiply
+{
+	int operator()(int a, int b) const
+	{
+		return a * b;
+	}
+};
+
+void test_accumulate()
+{
+	int array[] = {2, 3, 4};
+	int factorial = accumulate(array, array + 3, 1, Multiply());//累乘操作
+	cout << factorial << endl;
+}
+int main()
+{
+	test_accumulate();
+	return 0;
+}
+```
+
+### 4.5 **Conversion Operator operator T()** 
+
+The **conversion operator** operator T() allows objects to be either implicitly or explicitly (casting) converted to another type
+
+C++11 **Conversion operators** can be marked explicit to prevent implicit conversions. It is a good practice as for class constructors
+
+![图片10](.\c++学习笔记src\图片10.png)
+
+```c++
+struct x{
+		operator int() {return 0;}
+		operator float() {return 3.0f;}
+	};
+	auto f = []() -> auto {return x();};
+	int x = f();
+	float y = f();
+	cout << x << ' ' << y << endl; // output: x = 0, y = 3.0
+```
+
+
+
+### 4.6 Increment and Decrement Operators operator++/--
+
+The increment and decrement operators operator++, operator-- are used to **update** the value of a variable by one unit
+
+```c++
+struct A
+{
+	int* ptr;
+	int pos;
+	A(int* ptr, int pos) : ptr(ptr), pos(pos) {}
+	A& operator++()    //return by reference
+	{
+		++ptr;
+		++pos;
+		return *this;
+	}
+	A operator++(int)  //return by value
+	{
+		A tmp = *this;
+		++ptr;
+		++pos;
+		return tmp;
+	}
+};
+```
+
+### 4.7 **Assignment Operator operator=** 
+
+The **assignment operator** operator= is used to copy values from one object to another *already existing* object
+
+```c++
+struct Array
+{
+	char* array;
+	int size;
+	Array (int Size, char value) : size(Size)
+	{
+		array = new char[size];
+		fill(array, array + size, value);
+	}
+	~Array() { delete [] array; }
+	Array& operator = (const Array& other); //How to implement?
+	
+	friend std::ostream& operator<<(std::ostream& os, const Array& a)
+	{
+		for (int i = 0; i < a.size; i++)
+		{
+			os << a.array[i] << " ";
+		}
+		return os;
+	}
+};
+```
+
+==First option==
+
+```c++
+Array& operator = (const Array& other)
+{
+    if(this == &other)
+        return *this;
+    delete [] array;
+    size = other.size;
+    array = new char[size];
+    copy(other.array, other.array + size, array);
+}
+```
+
+==Second option(less intuitive)==
+
+```c++
+Array& operator= (Array other)
+{
+    swap(this, &other);
+    return *this;
+}
+friend void swap(Array* first, Array* second)
+{
+    using std::swap;
+    swap(first->size, second->size);
+    swap(first->array, second->array);
+}
+```
+
+• **why using** std::swap ? if swap(x, y) finds a better match, it will use that instead of std::swap
+
+• **why** friend ? it allows the function to be used from outside the structure/class scope
+
+### 4.8 **Stream Operator operator<<**
+
+The **stream operation** operator<< can be overloaded to perform input and output for user-defined types
+
+**The example above**
+
+```c++
+friend std::ostream& operator<<(std::ostream& os, const Array& a)
+{
+    for (int i = 0; i < a.size; i++)
+    {
+        os << a.array[i] << " ";
+    }
+    return os;
+}
+```
+
+### 4.9 **Operators Precedence**
+
+```c++
+struct Myint
+{
+	int x;
+	int operator^(int exp)
+	{
+		int result = 1;
+		for (int i = 0; i < exp; i++)
+		{
+			result *= x;
+		}
+		return result;
+	}
+};
+void test()
+{
+	Myint a{3};
+	std::cout << (a ^ 2) + 2 << std::endl; //output 11
+	int z = a ^ 2 + 2;
+	std::cout << z << std::endl;  //output 81
+}
+```
+
