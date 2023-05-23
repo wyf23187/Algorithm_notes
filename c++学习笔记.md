@@ -1,3 +1,5 @@
+[TOC]
+
 # c++学习笔记
 
 ## 1.Template Functions
@@ -891,6 +893,295 @@ void test()
 	std::cout << (a ^ 2) + 2 << std::endl; //output 11
 	int z = a ^ 2 + 2;
 	std::cout << z << std::endl;  //output 81
+}
+```
+
+## 5. Advanced Topics
+
+### 5.1.Error Handing
+
+#### 5.1.1 C++ Exception Basics
+
+C++ provides three keywords for exception handling:
+
+- `throw` Throws an exception
+- `try` Code block containing potential throwing expressions
+- `catch` Code block for handling the exception
+
+`throw` can throw everything such as integers, pointers, objects, etc. The standard way consists in using the std library exceptions <stdexcept>
+
+在C++中，异常处理通常使用标准库异常`<stdexcept>`中定义的异常类来实现。这些异常类包括`logic_error`、`runtime_error`、`domain_error`、`invalid_argument`、`length_error`、`out_of_range`、`range_error`、`overflow_error`和`underflow_error`等。这些异常类都继承自`exception`类，可以通过继承`exception`类来定义自己的异常类。
+
+以下是一个简单的示例，演示了如何使用`throw`和`catch`关键字处理异常
+
+```c++
+#include <iostream>
+#include <stdexcept>
+
+int main()
+{
+    try {
+        int x = 10;
+        int y = 0;
+        if (y == 0) {
+            throw std::runtime_error("Division by zero");
+        }
+        int z = x / y;
+        std::cout << "Result: " << z << std::endl;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
+    return 0;
+}
+
+```
+
+> catch(...) can be used to capture any throwninvolves useless copy for non exception
+
+#### 5.1.2 Exception Propagation
+
+Exceptions are automatically **propagated** along the call stack. The user can also control how they are propagated
+
+在下面这个例子中，`func3()`函数抛出了一个`std::runtime_error`异常，然后异常被传递到调用`func3()`的`func2()`函数中。`func2()`函数没有处理这个异常，而是将其继续向上传递到调用`func2()`的`func1()`函数中。在`func1()`函数中，我们使用`try`和`catch`关键字来捕获并处理这个异常。最后，异常被处理后，程序继续执行，输出`func1() end`、`main() end`等信息。
+
+```c++
+#include <iostream>
+#include <stdexcept>
+
+void func3()
+{
+    std::cout << "func3() start" << std::endl;
+    throw std::runtime_error("Error in func3()");
+    std::cout << "func3() end" << std::endl;
+}
+
+void func2()
+{
+    std::cout << "func2() start" << std::endl;
+    func3();
+    std::cout << "func2() end" << std::endl;
+}
+
+void func1()
+{
+    std::cout << "func1() start" << std::endl;
+    try {
+        func2();
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
+    std::cout << "func1() end" << std::endl;
+}
+
+int main()
+{
+    std::cout << "main() start" << std::endl;
+    func1();
+    std::cout << "main() end" << std::endl;
+    return 0;
+}
+
+```
+
+**输出**
+
+>main() start
+>func1() start
+>func2() start
+>func3() start
+>Error: Error in func3()
+>func1() end
+>main() end
+
+#### 5.1.3 Defining Custom Exceptions
+
+![图片11](.\c++学习笔记src\图片11.png)
+
+```c++
+#include <exception>
+#include <iostream>
+
+class MyException : public std::exception {
+  public:
+    MyException(const char* message) : msg_(message) {}
+    virtual const char* what() const throw () {
+        return msg_;
+    }
+  private:
+    const char* msg_;
+};
+
+int main() {
+    try {
+        throw MyException("Something went wrong!");
+    } catch (const std::exception& e) {
+        std::cout << "Caught exception: " << e.what() << std::endl;
+    }
+    return 0;
+}
+```
+
+#### 5.1.4 noexcept Keyword
+
+- `noexcept`是C++11中引入的一个关键字，用于指示函数是否可能抛出异常。当一个函数被声明为`noexcept`时，编译器可以进行一些优化，以提高程序的性能。此外，`noexcept`还可以用来帮助开发人员编写更健壮的代码。
+- 当一个函数被声明为`noexcept`时，它表示该函数不会抛出任何异常。如果函数确实抛出了异常，那么程序会调用`std::terminate`函数来终止程序。因此，使用`noexcept`可以让程序在运行时更加稳定和可靠。
+- 另外，当一个函数被声明为`noexcept`时，编译器可以进行一些优化，以提高程序的性能。由于`noexcept`函数不会抛出异常，因此编译器可以在编译时进行一些优化，如移除一些异常处理代码，从而提高程序的性能。
+
+```c++
+#include <iostream>
+
+void func1() noexcept
+{
+    std::cout << "func1() start" << std::endl;
+    std::cout << "func1() end" << std::endl;
+}
+
+void func2()
+{
+    std::cout << "func2() start" << std::endl;
+    throw std::runtime_error("Error in func2()");
+    std::cout << "func2() end" << std::endl;
+}
+
+int main()
+{
+    std::cout << "main() start" << std::endl;
+    func1();
+    try {
+        func2();
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
+    std::cout << "main() end" << std::endl;
+    return 0;
+}
+```
+
+- 在这个例子中，`func1()`函数被声明为`noexcept`，而`func2()`函数没有被声明为`noexcept`。当我们调用`func1()`函数时，程序会直接输出`func1() start`和`func1() end`信息，因为该函数不会抛出任何异常。而当我们调用`func2()`函数时，由于该函数抛出了一个`std::runtime_error`异常，程序会在`catch`块中捕获并处理异常。最后，程序输出`main() end`信息，正常结束。
+- 若`func2()`后面加上`noexcept(false)`，也可以正常输出
+
+![图片12](.\c++学习笔记src\图片12.png)
+
+### 5.2 Concurrency
+
+#### 5.2.1 Overview
+
+C++11 introduces the **Concurrency** library to simplify managing OS threads
+
+```c++
+#include <iostream>
+#include <thread>
+
+void hello() {
+	std::cout << "Hello concurrent world!\n";
+}
+
+int main() {
+	std::thread t(hello);
+	t.join();
+}
+```
+
+在这个例子中，我们定义了一个名为 `hello()` 的函数，它将在一个新线程中执行。我们使用 `std::thread` 类创建了一个新线程，并将 `hello()` 函数作为参数传递给它的构造函数。最后，我们调用 `join()` 方法等待线程执行完成。
+
+```c++
+#include <iostream>
+#include <thread>
+
+void task1() {
+	for (int i = 0; i < 100; ++i) {
+		std::cout << i << ' '<< "Task 1 is executing\n";
+	}
+}
+
+void task2() {
+	for (int i = 0; i < 100; ++i) {
+		std::cout << i << ' '<< "Task 2 is executing\n";
+	}
+}
+
+int main() {
+	std::thread t1(task1);
+	std::thread t2(task2);
+	t1.join();
+	t2.join();
+	return 0;
+}
+```
+
+#### 5.2.2 Thread Methods
+
+在 C++ 中，`std::thread` 类提供了许多方法来管理线程。下面是一些常用的方法：
+
+- `join()`：等待线程执行完成。如果线程还没有完成，调用该方法会阻塞当前线程直到该线程执行完成。
+- `detach()`：将线程与当前线程分离，使得它可以独立运行。一旦线程被分离，就无法再使用 `join()` 方法等待它执行完成。
+- `get_id()`：获取线程的唯一标识符。每个线程都有一个唯一的标识符，可以用来区分不同的线程。
+- `hardware_concurrency()`：获取当前系统支持的最大线程数。这个值通常取决于硬件和操作系统。
+- `swap()`：交换两个线程的状态。这个方法可以用来实现线程池等功能。
+
+```c++
+#include <iostream>
+#include <thread>
+
+int main() {
+    unsigned int numCores = std::thread::hardware_concurrency();
+    std::cout << "Number of CPU cores: " << numCores << std::endl;
+    return 0;
+}
+```
+
+```c++
+#include <iostream>
+#include <thread>
+
+void myThreadFunction() {
+    std::cout << "Hello from myThreadFunction!" << std::endl;
+}
+
+int main() {
+    std::thread myThread(myThreadFunction);
+    myThread.detach();
+    std::cout << "Main thread exiting..." << std::endl;
+    return 0;
+}
+```
+
+#### 5.2.3 Parameters Passing
+
+- 构造函数传递参数
+
+```c++
+#include <iostream>
+#include <thread>
+
+void myThreadFunction(int x, int y) {
+    std::cout << "x + y = " << x + y << std::endl;
+}
+
+int main() {
+    int x = 2, y = 3;
+    std::thread myThread(myThreadFunction, x, y);
+    myThread.join();
+    return 0;
+}
+```
+
+- lambda表达式捕获参数
+
+```c++
+#include <iostream>
+#include <thread>
+
+int main() {
+    int x = 2, y = 3;
+    std::thread myThread([x, y]() {
+        std::cout << "x + y = " << x + y << std::endl;
+    });
+    myThread.join();
+    return 0;
 }
 ```
 
